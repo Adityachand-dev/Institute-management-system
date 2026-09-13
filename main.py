@@ -3,2270 +3,891 @@ import customtkinter as ctk
 from datetime import date, datetime
 import database
 
-
 database.create_tables()
 
-
-ctk.set_appearance_mode("System")
+ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("dark-blue")
 
-class LoginWindow(ctk.CTk):
 
+def configure_treeview_style():
+    style = ttk.Style()
+    style.theme_use("clam")
+    style.configure(
+        "Treeview",
+        background="#2b2b2b",
+        foreground="#ffffff",
+        fieldbackground="#2b2b2b",
+        rowheight=32,
+        font=("Segoe UI", 11)
+    )
+    style.configure(
+        "Treeview.Heading",
+        background="#1f538d",
+        foreground="#ffffff",
+        font=("Segoe UI", 12, "bold")
+    )
+    style.map(
+        "Treeview",
+        background=[("selected", "#144870")],
+        foreground=[("selected", "#ffffff")]
+    )
+
+
+class LoginWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
-
         self.title("Institute Student Management System")
-        self.geometry("500x420")
+        self.geometry("520x460")
         self.resizable(False, False)
-
         self.attempts = 3
 
         ctk.CTkLabel(
             self,
             text="Institute Student Management System",
-            font=("Arial", 24, "bold")
-        ).pack(pady=(30, 10))
+            font=("Segoe UI", 24, "bold")
+        ).pack(pady=(35, 10))
 
         ctk.CTkLabel(
             self,
             text="Administrator Login",
-            font=("Arial", 18)
+            font=("Segoe UI", 18)
         ).pack(pady=5)
 
         self.username = ctk.CTkEntry(
             self,
-            width=300,
+            width=320,
+            height=40,
             placeholder_text="Username"
         )
-        self.username.pack(pady=15)
+        self.username.pack(pady=12)
 
         self.password = ctk.CTkEntry(
             self,
-            width=300,
+            width=320,
+            height=40,
             placeholder_text="Password",
             show="*"
         )
-        self.password.pack(pady=15)
+        self.password.pack(pady=12)
 
         ctk.CTkButton(
             self,
             text="Login",
-            width=300,
+            width=320,
+            height=42,
+            font=("Segoe UI", 14, "bold"),
             command=self.login
         ).pack(pady=20)
 
         self.info = ctk.CTkLabel(
             self,
             text="Attempts Remaining : 3",
-            text_color="red"
+            text_color="red",
+            font=("Segoe UI", 13)
         )
         self.info.pack()
 
         self.bind("<Return>", lambda event: self.login())
 
     def login(self):
-
         username = self.username.get().strip()
         password = self.password.get().strip()
 
         if not username or not password:
-            messagebox.showerror(
-                "Error",
-                "Please enter username and password."
-            )
+            messagebox.showerror("Error", "Please enter username and password.")
             return
 
         try:
-
             conn = database.get_connection()
             cursor = conn.cursor()
-
             cursor.execute(
-                """
-                SELECT *
-                FROM admin
-                WHERE username=? AND password=?
-                """,
+                "SELECT * FROM admin WHERE username=? AND password=?",
                 (username, password)
             )
-
             user = cursor.fetchone()
-
             conn.close()
 
             if user:
-
                 database.add_log("Administrator Logged In")
-
-                messagebox.showinfo(
-                    "Success",
-                    "Login Successful."
-                )
-
+                messagebox.showinfo("Success", "Login Successful.")
                 self.destroy()
-
                 dashboard = Dashboard()
                 dashboard.mainloop()
-
             else:
-
                 self.attempts -= 1
-
-                self.info.configure(
-                    text=f"Attempts Remaining : {self.attempts}"
-                )
-
+                self.info.configure(text=f"Attempts Remaining : {self.attempts}")
                 if self.attempts <= 0:
-
                     database.add_log("Login Failed (3 Attempts)")
-
-                    messagebox.showerror(
-                        "Access Denied",
-                        "Maximum login attempts reached."
-                    )
-
+                    messagebox.showerror("Access Denied", "Maximum login attempts reached.")
                     self.destroy()
-
                 else:
-
-                    messagebox.showerror(
-                        "Login Failed",
-                        "Invalid Username or Password."
-                    )
-
+                    messagebox.showerror("Login Failed", "Invalid Username or Password.")
         except Exception as e:
+            messagebox.showerror("Database Error", str(e))
 
-            messagebox.showerror(
-                "Database Error",
-                str(e)
-            )
 
 class Dashboard(ctk.CTk):
-
     def __init__(self):
         super().__init__()
+        self.title("Institute Student Management System - Dashboard")
+        self.minsize(1100, 700)
+        
+        # Open directly in maximized state cleanly
+        self.after(10, lambda: self.state("zoomed"))
 
-        self.title("Institute Student Management System")
-        self.geometry("1100x700")
-        self.minsize(1000, 650)
+        configure_treeview_style()
 
         ctk.CTkLabel(
             self,
             text="Institute Student Management System",
-            font=("Arial", 28, "bold")
+            font=("Segoe UI", 28, "bold")
         ).pack(pady=(20, 5))
 
         ctk.CTkLabel(
             self,
             text="Administrator Dashboard",
-            font=("Arial", 18)
-        ).pack(pady=(0, 20))
+            font=("Segoe UI", 18)
+        ).pack(pady=(0, 15))
 
         self.main_frame = ctk.CTkFrame(self)
-        self.main_frame.pack(
-            fill="both",
-            expand=True,
-            padx=20,
-            pady=10
-        )
+        self.main_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
-        self.menu = ctk.CTkFrame(
-            self.main_frame,
-            width=280
-        )
-
-        self.menu.pack(
-            side="left",
-            fill="y",
-            padx=10,
-            pady=10
-        )
-
+        self.menu = ctk.CTkFrame(self.main_frame, width=280)
+        self.menu.pack(side="left", fill="y", padx=10, pady=10)
         self.menu.pack_propagate(False)
 
-        ctk.CTkLabel(
-            self.menu,
-            text="Menu",
-            font=("Arial", 22, "bold")
-        ).pack(pady=15)
+        ctk.CTkLabel(self.menu, text="Navigation Menu", font=("Segoe UI", 20, "bold")).pack(pady=15)
 
         self.content = ctk.CTkFrame(self.main_frame)
+        self.content.pack(side="right", fill="both", expand=True, padx=10, pady=10)
 
-        self.content.pack(
-            side="right",
-            fill="both",
-            expand=True,
-            padx=10,
-            pady=10
-        )
+        button_width = 240
+        menu_items = [
+            ("Student Registration", lambda: StudentRegistration(self)),
+            ("Display All Students", lambda: ViewStudents(self)),
+            ("Search Student", lambda: SearchStudent(self)),
+            ("Update Student", lambda: UpdateStudent(self)),
+            ("Delete Student", lambda: DeleteStudent(self)),
+            ("Course Management", lambda: CourseManagement(self)),
+            ("Batch Management", lambda: BatchManagement(self)),
+            ("Fee Management", lambda: FeeManagement(self)),
+            ("Attendance", lambda: AttendanceWindow(self)),
+            ("Reports", lambda: ReportsWindow(self)),
+            ("Logout", self.logout),
+        ]
 
-        students, courses, batches, fees = database.dashboard_statistics()
+        for text, cmd in menu_items:
+            ctk.CTkButton(
+                self.menu,
+                text=text,
+                width=button_width,
+                height=38,
+                font=("Segoe UI", 13),
+                command=cmd
+            ).pack(pady=5)
 
-        stats_frame = ctk.CTkFrame(self.content)
-        stats_frame.pack(fill="x", padx=15, pady=15)
-
-        ctk.CTkLabel(
-            stats_frame,
-            text=f"👨‍🎓 Students : {students}",
-            font=("Arial", 18, "bold")
-        ).grid(row=0, column=0, padx=25, pady=20)
-
-        ctk.CTkLabel(
-            stats_frame,
-            text=f"📚 Courses : {courses}",
-            font=("Arial", 18, "bold")
-        ).grid(row=0, column=1, padx=25)
-
-        ctk.CTkLabel(
-            stats_frame,
-            text=f"🕒 Batches : {batches}",
-            font=("Arial", 18, "bold")
-        ).grid(row=1, column=0, padx=25, pady=20)
-
-        ctk.CTkLabel(
-            stats_frame,
-            text=f"💰 Fees Collected : ₹{fees}",
-            font=("Arial", 18, "bold")
-        ).grid(row=1, column=1, padx=25)
-
-        ctk.CTkLabel(
-            self.content,
-            text="Welcome Administrator",
-            font=("Arial", 22, "bold")
-        ).pack(pady=(20, 5))
-
-        ctk.CTkLabel(
-            self.content,
-            text="Select an option from the left menu.",
-            font=("Arial", 16)
-        ).pack()
-
-        button_width = 220
-
-        ctk.CTkButton(
-            self.menu,
-            text="Student Registration",
-            width=button_width,
-            command=lambda: StudentRegistration(self)
-        ).pack(pady=5)
-
-        ctk.CTkButton(
-            self.menu,
-            text="Display All Students",
-            width=button_width,
-            command=lambda: ViewStudents(self)
-        ).pack(pady=5)
-
-        ctk.CTkButton(
-            self.menu,
-            text="Search Student",
-            width=button_width,
-            command=lambda: SearchStudent(self)
-        ).pack(pady=5)
-
-        ctk.CTkButton(
-            self.menu,
-            text="Update Student",
-            width=button_width,
-            command=lambda: UpdateStudent(self)
-        ).pack(pady=5)
-
-        ctk.CTkButton(
-            self.menu,
-            text="Delete Student",
-            width=button_width,
-            command=lambda: DeleteStudent(self)
-        ).pack(pady=5)
-
-        ctk.CTkButton(
-            self.menu,
-            text="Course Management",
-            width=button_width,
-            command=lambda: CourseManagement(self)
-        ).pack(pady=5)
-
-        ctk.CTkButton(
-            self.menu,
-            text="Batch Management",
-            width=button_width,
-            command=lambda: BatchManagement(self)
-        ).pack(pady=5)
-
-        ctk.CTkButton(
-            self.menu,
-            text="Fee Management",
-            width=button_width,
-            command=lambda: FeeManagement(self)
-        ).pack(pady=5)
-
-        ctk.CTkButton(
-            self.menu,
-            text="Attendance",
-            width=button_width,
-            command=lambda: AttendanceWindow(self)
-        ).pack(pady=5)
-
-        ctk.CTkButton(
-            self.menu,
-            text="Reports",
-            width=button_width,
-            command=lambda: ReportsWindow(self)
-        ).pack(pady=5)
-
-
-    def refresh_dashboard(self):
-
-        students, courses, batches, fees = database.dashboard_statistics()
-
-        try:
-            self.students_value.configure(text=str(students))
-            self.courses_value.configure(text=str(courses))
-            self.batches_value.configure(text=str(batches))
-            self.fees_value.configure(text=f"₹ {fees:.2f}")
-        except:
-            pass
+        self.show_welcome()
 
     def show_welcome(self):
-
         for widget in self.content.winfo_children():
             widget.destroy()
 
-        title = ctk.CTkLabel(
-            self.content,
-            text="Welcome Administrator",
-            font=("Arial",28,"bold")
-        )
+        students, courses, batches, fees = database.dashboard_statistics()
 
-        title.pack(pady=(30,10))
-
-        subtitle = ctk.CTkLabel(
-            self.content,
-            text="Institute Student Management System",
-            font=("Arial",18)
-        )
-
-        subtitle.pack(pady=(0,30))
+        title = ctk.CTkLabel(self.content, text="System Overview", font=("Segoe UI", 26, "bold"))
+        title.pack(pady=(25, 10))
 
         stats_frame = ctk.CTkFrame(self.content)
+        stats_frame.pack(padx=20, pady=20, fill="x")
+        stats_frame.grid_columnconfigure((0, 1), weight=1)
 
-        stats_frame.pack(
-            padx=20,
-            pady=20,
-            fill="x"
-        )
+        metrics = [
+            ("👨‍🎓 Total Students", f"{students}", 0, 0),
+            ("📚 Active Courses", f"{courses}", 0, 1),
+            ("🕒 Total Batches", f"{batches}", 1, 0),
+            ("💰 Fees Collected", f"₹ {fees:,.2f}", 1, 1),
+        ]
 
-        card1 = ctk.CTkFrame(stats_frame)
+        for title_text, val_text, row, col in metrics:
+            card = ctk.CTkFrame(stats_frame, corner_radius=12)
+            card.grid(row=row, column=col, padx=15, pady=15, sticky="nsew")
+            ctk.CTkLabel(card, text=title_text, font=("Segoe UI", 16, "bold")).pack(pady=(15, 5))
+            ctk.CTkLabel(card, text=val_text, font=("Segoe UI", 26, "bold"), text_color="#3B8ED0").pack(pady=(0, 15))
 
-        card1.grid(row=0,column=0,padx=15,pady=15)
-
-        ctk.CTkLabel(
-            card1,
-            text="Students",
-            font=("Arial",18,"bold")
-        ).pack(pady=(15,5))
-
-        self.students_value = ctk.CTkLabel(
-            card1,
-            text="0",
-            font=("Arial",30,"bold")
-        )
-
-        self.students_value.pack(pady=(0,15))
-
-        card2 = ctk.CTkFrame(stats_frame)
-
-        card2.grid(row=0,column=1,padx=15,pady=15)
-
-        ctk.CTkLabel(
-            card2,
-            text="Courses",
-            font=("Arial",18,"bold")
-        ).pack(pady=(15,5))
-
-        self.courses_value = ctk.CTkLabel(
-            card2,
-            text="0",
-            font=("Arial",30,"bold")
-        )
-
-        self.courses_value.pack(pady=(0,15))
+    def logout(self):
+        if messagebox.askyesno("Confirm Logout", "Are you sure you want to log out?"):
+            database.add_log("Administrator Logged Out")
+            self.destroy()
+            LoginWindow().mainloop()
 
 
-        card3 = ctk.CTkFrame(stats_frame)
-
-        card3.grid(row=1,column=0,padx=15,pady=15)
-
-        ctk.CTkLabel(
-            card3,
-            text="Batches",
-            font=("Arial",18,"bold")
-        ).pack(pady=(15,5))
-
-        self.batches_value = ctk.CTkLabel(
-            card3,
-            text="0",
-            font=("Arial",30,"bold")
-        )
-
-        self.batches_value.pack(pady=(0,15))
-
-        card4 = ctk.CTkFrame(stats_frame)
-
-        card4.grid(row=1,column=1,padx=15,pady=15)
-
-        ctk.CTkLabel(
-            card4,
-            text="Fees Collected",
-            font=("Arial",18,"bold")
-        ).pack(pady=(15,5))
-
-        self.fees_value = ctk.CTkLabel(
-            card4,
-            text="₹ 0",
-            font=("Arial",30,"bold")
-        )
-
-        self.fees_value.pack(pady=(0,15))
-
-        self.refresh_dashboard()
-
-class StudentRegistration(ctk.CTkToplevel):
-
+class ViewStudents(ctk.CTkToplevel):
     def __init__(self, parent):
-
         super().__init__(parent)
-
-        self.title("Student Registration")
-        self.geometry("700x760")
+        self.title("Student Records")
+        self.after(10, lambda: self.state("zoomed"))
         self.grab_set()
 
-        ctk.CTkLabel(
-            self,
-            text="Student Registration",
-            font=("Arial", 24, "bold")
-        ).pack(pady=20)
+        top = ctk.CTkFrame(self)
+        top.pack(fill="x", padx=15, pady=15)
 
-        self.name = ctk.CTkEntry(self, width=500, placeholder_text="Full Name")
+        self.search = ctk.CTkEntry(top, width=350, height=38, placeholder_text="Search by Name, Mobile, or Course...")
+        self.search.pack(side="left", padx=10)
+
+        ctk.CTkButton(top, text="Search", width=120, height=38, command=self.search_student).pack(side="left", padx=5)
+        ctk.CTkButton(top, text="Refresh", width=120, height=38, fg_color="gray40", command=self.load_students).pack(side="left", padx=5)
+
+        frame = ctk.CTkFrame(self)
+        frame.pack(fill="both", expand=True, padx=15, pady=10)
+
+        columns = ("ID", "Name", "Gender", "Mobile", "Course", "Batch", "Course Fee", "Fee Paid", "Balance")
+        self.tree = ttk.Treeview(frame, columns=columns, show="headings", selectmode="browse")
+
+        col_configs = [
+            ("ID", 70), ("Name", 220), ("Gender", 90), ("Mobile", 130),
+            ("Course", 160), ("Batch", 130), ("Course Fee", 110), ("Fee Paid", 110), ("Balance", 110)
+        ]
+
+        for col, width in col_configs:
+            self.tree.heading(col, text=col)
+            self.tree.column(col, width=width, anchor="center", stretch=True)
+
+        yscroll = ttk.Scrollbar(frame, orient="vertical", command=self.tree.yview)
+        xscroll = ttk.Scrollbar(frame, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=yscroll.set, xscrollcommand=xscroll.set)
+
+        self.tree.pack(side="left", fill="both", expand=True)
+        yscroll.pack(side="right", fill="y")
+        xscroll.pack(side="bottom", fill="x")
+
+        self.search.bind("<KeyRelease>", lambda e: self.search_student())
+        self.load_students()
+
+    def load_students(self):
+        self.tree.delete(*self.tree.get_children())
+        for student in database.get_all_students():
+            self.tree.insert("", "end", values=(
+                student["student_id"], student["full_name"], student["gender"],
+                student["mobile"], student["course"], student["batch"],
+                f"₹{student['course_fee']:.2f}", f"₹{student['fee_paid']:.2f}", f"₹{student['balance_fee']:.2f}"
+            ))
+
+    def search_student(self):
+        kw = self.search.get().strip().lower()
+        self.tree.delete(*self.tree.get_children())
+        for s in database.get_all_students():
+            if kw in s["full_name"].lower() or kw in s["mobile"] or kw in s["course"].lower():
+                self.tree.insert("", "end", values=(
+                    s["student_id"], s["full_name"], s["gender"],
+                    s["mobile"], s["course"], s["batch"],
+                    f"₹{s['course_fee']:.2f}", f"₹{s['fee_paid']:.2f}", f"₹{s['balance_fee']:.2f}"
+                ))
+
+
+class StudentRegistration(ctk.CTkToplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Student Registration")
+        self.after(10, lambda: self.state("zoomed"))
+        self.grab_set()
+
+        scroll = ctk.CTkScrollableFrame(self)
+        scroll.pack(fill="both", expand=True, padx=40, pady=20)
+
+        ctk.CTkLabel(scroll, text="New Student Onboarding", font=("Segoe UI", 24, "bold")).pack(pady=20)
+
+        self.name = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="Full Name")
         self.name.pack(pady=8)
 
-        self.gender = ctk.CTkComboBox(
-            self,
-            values=["Male", "Female", "Other"]
-        )
+        self.gender = ctk.CTkComboBox(scroll, width=600, height=40, values=["Male", "Female", "Other"])
         self.gender.set("Male")
         self.gender.pack(pady=8)
 
-        self.dob = ctk.CTkEntry(
-            self,
-            width=500,
-            placeholder_text="DD/MM/YYYY"
-        )
+        self.dob = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="Date of Birth (DD/MM/YYYY)")
         self.dob.pack(pady=8)
 
-        self.mobile = ctk.CTkEntry(
-            self,
-            width=500,
-            placeholder_text="Mobile Number"
-        )
+        self.mobile = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="10-Digit Mobile Number")
         self.mobile.pack(pady=8)
 
-        self.email = ctk.CTkEntry(
-            self,
-            width=500,
-            placeholder_text="Email Address"
-        )
+        self.email = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="Email Address")
         self.email.pack(pady=8)
 
-        self.address = ctk.CTkEntry(
-            self,
-            width=500,
-            placeholder_text="Address"
-        )
+        self.address = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="Residential Address")
         self.address.pack(pady=8)
 
-        self.course = ctk.CTkEntry(
-            self,
-            width=500,
-            placeholder_text="Course"
-        )
+        self.course = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="Enrolled Course")
         self.course.pack(pady=8)
 
-        self.batch = ctk.CTkEntry(
-            self,
-            width=500,
-            placeholder_text="Batch"
-        )
+        self.batch = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="Assigned Batch")
         self.batch.pack(pady=8)
 
-        self.fees = ctk.CTkEntry(
-            self,
-            width=500,
-            placeholder_text="Course Fee"
-        )
+        self.fees = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="Total Course Fee")
         self.fees.pack(pady=8)
 
-        self.paid = ctk.CTkEntry(
-            self,
-            width=500,
-            placeholder_text="Fee Paid"
-        )
+        self.paid = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="Initial Fee Paid")
         self.paid.insert(0, "0")
         self.paid.pack(pady=8)
 
-        button_frame = ctk.CTkFrame(self)
-        button_frame.pack(pady=20)
+        btn_frame = ctk.CTkFrame(scroll)
+        btn_frame.pack(pady=25)
 
-        ctk.CTkButton(
-            button_frame,
-            text="Register Student",
-            width=180,
-            command=self.save_student
-        ).grid(row=0, column=0, padx=10)
-
-        ctk.CTkButton(
-            button_frame,
-            text="Clear",
-            width=180,
-            fg_color="gray40",
-            command=self.clear
-        ).grid(row=0, column=1, padx=10)
+        ctk.CTkButton(btn_frame, text="Register Student", width=220, height=42, command=self.save_student).grid(row=0, column=0, padx=10)
+        ctk.CTkButton(btn_frame, text="Clear Form", width=220, height=42, fg_color="gray40", command=self.clear).grid(row=0, column=1, padx=10)
 
     def save_student(self):
-
         try:
-
             name = self.name.get().strip()
             mobile = self.mobile.get().strip()
-
             if not name:
-                messagebox.showerror("Error", "Enter student name.")
+                messagebox.showerror("Validation Error", "Student name is required.")
                 return
-
             if not mobile.isdigit() or len(mobile) != 10:
-                messagebox.showerror(
-                    "Error",
-                    "Enter a valid 10-digit mobile number."
-                )
+                messagebox.showerror("Validation Error", "Enter a valid 10-digit mobile number.")
                 return
 
             fee = float(self.fees.get() or 0)
             paid = float(self.paid.get() or 0)
 
             if fee < 0 or paid < 0:
-                messagebox.showerror(
-                    "Error",
-                    "Fees cannot be negative."
-                )
+                messagebox.showerror("Validation Error", "Fee values cannot be negative.")
                 return
-
             if paid > fee:
-                messagebox.showerror(
-                    "Error",
-                    "Paid fee cannot exceed total fee."
-                )
+                messagebox.showerror("Validation Error", "Initial paid fee cannot exceed total fee.")
                 return
 
             balance = fee - paid
-
-            student = (
-
-                name,
-                self.gender.get(),
-                self.dob.get().strip(),
-                mobile,
-                self.email.get().strip(),
-                self.address.get().strip(),
-                self.course.get().strip(),
-                self.batch.get().strip(),
-                str(date.today()),
-                fee,
-                paid,
-                balance
-
+            student_data = (
+                name, self.gender.get(), self.dob.get().strip(), mobile,
+                self.email.get().strip(), self.address.get().strip(),
+                self.course.get().strip(), self.batch.get().strip(),
+                str(date.today()), fee, paid, balance
             )
-
-            student_id = database.add_student(student)
-
-            database.add_log(
-                f"Student Registered : {student_id}"
-            )
-
-            messagebox.showinfo(
-                "Success",
-                f"Student Registered Successfully.\n\nStudent ID : {student_id}"
-            )
-
+            sid = database.add_student(student_data)
+            messagebox.showinfo("Success", f"Student registered successfully!\nGenerated Student ID: {sid}")
             self.clear()
-            
             if isinstance(self.master, Dashboard):
                 self.master.show_welcome()
-            
-
         except ValueError:
-
-            messagebox.showerror(
-                "Error",
-                "Fee fields must contain valid numbers."
-            )
-
+            messagebox.showerror("Error", "Fee amounts must be numeric.")
         except Exception as e:
-
-            messagebox.showerror(
-                "Database Error",
-                str(e)
-            )
+            messagebox.showerror("Database Error", str(e))
 
     def clear(self):
-
-        entries = [
-
-            self.name,
-            self.dob,
-            self.mobile,
-            self.email,
-            self.address,
-            self.course,
-            self.batch,
-            self.fees,
-            self.paid
-
-        ]
-
-        for entry in entries:
-            entry.delete(0, "end")
-
+        for e in [self.name, self.dob, self.mobile, self.email, self.address, self.course, self.batch, self.fees, self.paid]:
+            e.delete(0, "end")
         self.gender.set("Male")
         self.paid.insert(0, "0")
 
+
 class SearchStudent(ctk.CTkToplevel):
-
     def __init__(self, parent):
-
         super().__init__(parent)
-
         self.title("Search Student")
-        self.geometry("700x650")
-        self.resizable(False, False)
+        self.after(10, lambda: self.state("zoomed"))
         self.grab_set()
 
-        ctk.CTkLabel(
-            self,
-            text="Search Student",
-            font=("Arial", 24, "bold")
-        ).pack(pady=20)
-
-        self.search = ctk.CTkEntry(
-            self,
-            width=400,
-            placeholder_text="Enter Student ID or Mobile Number"
-        )
-
-        self.search.pack(pady=10)
-
-        ctk.CTkButton(
-            self,
-            text="Search",
-            width=180,
-            command=self.search_student
-        ).pack(pady=10)
-
-        self.result = ctk.CTkTextbox(
-            self,
-            width=620,
-            height=420,
-            font=("Consolas", 14)
-        )
-
-        self.result.pack(pady=20)
-
-    def search_student(self):
-
-        value = self.search.get().strip()
-
-        self.result.delete("1.0", "end")
-
-        if value == "":
-            messagebox.showerror(
-                "Error",
-                "Please enter Student ID or Mobile Number."
-            )
-            return
-
-        try:
-
-            if value.isdigit():
-
-                if len(value) == 10:
-                    student = database.search_student(mobile=value)
-                else:
-                    student = database.search_student(
-                        student_id=int(value)
-                    )
-
-            else:
-
-                messagebox.showerror(
-                    "Error",
-                    "Student ID must be numeric."
-                )
-                return
-
-            if not student:
-
-                self.result.insert(
-                    "end",
-                    "No Student Found."
-                )
-                return
-
-            report = f"""
-========================================================
-
-                STUDENT DETAILS
-
-========================================================
-
-Student ID      : {student["student_id"]}
-
-Full Name       : {student["full_name"]}
-
-Gender          : {student["gender"]}
-
-Date of Birth   : {student["dob"]}
-
-Mobile Number   : {student["mobile"]}
-
-Email           : {student["email"]}
-
-Address         : {student["address"]}
-
-Course          : {student["course"]}
-
-Batch           : {student["batch"]}
-
-Admission Date  : {student["admission_date"]}
-
-Course Fee      : ₹{student["course_fee"]:.2f}
-
-Fees Paid       : ₹{student["fee_paid"]:.2f}
-
-Balance Fee     : ₹{student["balance_fee"]:.2f}
-
-========================================================
-"""
-
-            self.result.insert(
-                "end",
-                report
-            )
-
-        except Exception as e:
-
-            messagebox.showerror(
-                "Error",
-                str(e)
-            )
-    def update_student(self):
-
-        try:
-
-            sid = self.search_id.get().strip()
-
-            if sid == "":
-                messagebox.showerror(
-                    "Error",
-                    "Enter Student ID."
-                )
-                return
-
-            if not sid.isdigit():
-                messagebox.showerror(
-                    "Error",
-                    "Student ID must be numeric."
-                )
-                return
-
-            name = self.name.get().strip()
-
-            mobile = self.mobile.get().strip()
-
-            if name == "":
-                messagebox.showerror(
-                    "Error",
-                    "Student name is required."
-                )
-                return
-
-            if not mobile.isdigit() or len(mobile) != 10:
-                messagebox.showerror(
-                    "Error",
-                    "Enter a valid 10-digit mobile number."
-                )
-                return
-
-            fee = float(self.fee.get() or 0)
-            paid = float(self.paid.get() or 0)
-
-            if paid > fee:
-                messagebox.showerror(
-                    "Error",
-                    "Paid fee cannot exceed course fee."
-                )
-                return
-
-            balance = fee - paid
-
-            data = (
-
-                name,
-                self.gender.get(),
-                self.dob.get().strip(),
-                mobile,
-                self.email.get().strip(),
-                self.address.get().strip(),
-                self.course.get().strip(),
-                self.batch.get().strip(),
-                fee,
-                paid,
-                balance,
-                int(sid)
-
-            )
-
-            database.update_student(data)
-
-            database.add_log(
-                f"Student Updated : {sid}"
-            )
-
-            messagebox.showinfo(
-                "Success",
-                "Student details updated successfully."
-            )
-
-            if isinstance(self.master, Dashboard):
-                self.master.show_welcome()
-
-            self.destroy()
-
-        except ValueError:
-
-            messagebox.showerror(
-                "Error",
-                "Fee fields must contain valid numbers."
-            )
-
-        except Exception as e:
-
-            messagebox.showerror(
-                "Error",
-                str(e)
-            )
-
-class DeleteStudent(ctk.CTkToplevel):
-
-    def __init__(self, parent):
-
-        super().__init__(parent)
-
-        self.title("Delete Student")
-        self.geometry("550x450")
-        self.resizable(False, False)
-        self.grab_set()
-
-        ctk.CTkLabel(
-            self,
-            text="Delete Student",
-            font=("Arial", 24, "bold")
-        ).pack(pady=20)
-
-        self.student_id = ctk.CTkEntry(
-            self,
-            width=320,
-            placeholder_text="Enter Student ID"
-        )
-
-        self.student_id.pack(pady=10)
-
-        ctk.CTkButton(
-            self,
-            text="Search",
-            width=180,
-            command=self.search_student
-        ).pack(pady=10)
-
-        self.info = ctk.CTkTextbox(
-            self,
-            width=450,
-            height=150
-        )
-
-        self.info.pack(pady=15)
-
-        ctk.CTkButton(
-            self,
-            text="Delete Student",
-            width=180,
-            fg_color="red",
-            hover_color="darkred",
-            command=self.delete_student
-        ).pack(pady=15)
-
-    def search_student(self):
-
-        self.info.delete("1.0", "end")
-
-        sid = self.student_id.get().strip()
-
-        if not sid.isdigit():
-
-            messagebox.showerror(
-                "Error",
-                "Enter a valid Student ID."
-            )
-            return
-
-        student = database.search_student(
-            student_id=int(sid)
-        )
-
-        if not student:
-
-            messagebox.showerror(
-                "Error",
-                "Student not found."
-            )
-            return
-
-        text = f"""
-Student ID : {student['student_id']}
-
-Name       : {student['full_name']}
-
-Course     : {student['course']}
-
-Batch      : {student['batch']}
-
-Mobile     : {student['mobile']}
-"""
-
-        self.info.insert("end", text)
-
-    def delete_student(self):
-
-        sid = self.student_id.get().strip()
-
-        if not sid.isdigit():
-
-            messagebox.showerror(
-                "Error",
-                "Enter a valid Student ID."
-            )
-            return
-
-        student = database.search_student(
-            student_id=int(sid)
-        )
-
-        if not student:
-
-            messagebox.showerror(
-                "Error",
-                "Student not found."
-            )
-            return
-
-        confirm = messagebox.askyesno(
-            "Confirm Delete",
-            f"Delete student\n\n{student['full_name']} ?"
-        )
-
-        if not confirm:
-            return
-
-        try:
-
-            database.delete_student(
-                int(sid)
-            )
-
-            database.add_log(
-                f"Student Deleted : {sid}"
-            )
-
-            messagebox.showinfo(
-                "Success",
-                "Student deleted successfully."
-            )
-
-            if isinstance(self.master, Dashboard):
-                self.master.show_welcome()
-
-            self.destroy()
-
-        except Exception as e:
-
-            messagebox.showerror(
-                "Error",
-                str(e)
-            )
-
-class ViewStudents(ctk.CTkToplevel):
-
-    def __init__(self, parent):
-
-        super().__init__(parent)
-
-        self.title("Student Records")
-        self.geometry("1250x650")
-        self.grab_set()
+        ctk.CTkLabel(self, text="Student Search Portal", font=("Segoe UI", 24, "bold")).pack(pady=20)
 
         top = ctk.CTkFrame(self)
-        top.pack(fill="x", padx=10, pady=10)
+        top.pack(pady=10)
 
-        self.search = ctk.CTkEntry(
-            top,
-            width=300,
-            placeholder_text="Search Name / Mobile / Course"
-        )
-
+        self.search = ctk.CTkEntry(top, width=420, height=40, placeholder_text="Enter Student ID or 10-Digit Mobile")
         self.search.pack(side="left", padx=10)
+        ctk.CTkButton(top, text="Search Record", width=140, height=40, command=self.search_student).pack(side="left", padx=5)
 
-        ctk.CTkButton(
-            top,
-            text="Search",
-            command=self.search_student
-        ).pack(side="left", padx=5)
-
-        ctk.CTkButton(
-            top,
-            text="Refresh",
-            command=self.load_students
-        ).pack(side="left", padx=5)
-
-        frame = ctk.CTkFrame(self)
-
-        frame.pack(
-            fill="both",
-            expand=True,
-            padx=10,
-            pady=10
-        )
-
-        columns = (
-
-            "ID",
-            "Name",
-            "Gender",
-            "Mobile",
-            "Course",
-            "Batch",
-            "Fee",
-            "Paid",
-            "Balance"
-
-        )
-
-        self.tree = ttk.Treeview(
-            frame,
-            columns=columns,
-            show="headings"
-        )
-
-        widths = [
-
-            70,
-            200,
-            90,
-            130,
-            150,
-            120,
-            100,
-            100,
-            100
-
-        ]
-
-        for col, width in zip(columns, widths):
-
-            self.tree.heading(col, text=col)
-
-            self.tree.column(
-                col,
-                width=width,
-                anchor="center"
-            )
-
-        yscroll = ttk.Scrollbar(
-            frame,
-            orient="vertical",
-            command=self.tree.yview
-        )
-
-        xscroll = ttk.Scrollbar(
-            frame,
-            orient="horizontal",
-            command=self.tree.xview
-        )
-
-        self.tree.configure(
-            yscrollcommand=yscroll.set,
-            xscrollcommand=xscroll.set
-        )
-
-        self.tree.pack(
-            side="left",
-            fill="both",
-            expand=True
-        )
-
-        yscroll.pack(
-            side="right",
-            fill="y"
-        )
-
-        xscroll.pack(
-            side="bottom",
-            fill="x"
-        )
-
-        self.tree.bind(
-            "<Double-1>",
-            self.show_details
-        )
-
-        self.load_students()
-
-    def load_students(self):
-
-        self.tree.delete(*self.tree.get_children())
-
-        students = database.get_all_students()
-
-        for student in students:
-
-            self.tree.insert(
-                "",
-                "end",
-                values=(
-
-                    student["student_id"],
-                    student["full_name"],
-                    student["gender"],
-                    student["mobile"],
-                    student["course"],
-                    student["batch"],
-                    student["course_fee"],
-                    student["fee_paid"],
-                    student["balance_fee"]
-
-                )
-            )
+        self.result = ctk.CTkTextbox(self, width=900, height=520, font=("Consolas", 14))
+        self.result.pack(fill="both", expand=True, padx=40, pady=20)
 
     def search_student(self):
-
-        keyword = self.search.get().strip().lower()
-
-        self.tree.delete(*self.tree.get_children())
-
-        students = database.get_all_students()
-
-        for student in students:
-
-            if (
-
-                keyword in student["full_name"].lower()
-
-                or keyword in student["mobile"]
-
-                or keyword in student["course"].lower()
-
-            ):
-
-                self.tree.insert(
-                    "",
-                    "end",
-                    values=(
-
-                        student["student_id"],
-                        student["full_name"],
-                        student["gender"],
-                        student["mobile"],
-                        student["course"],
-                        student["batch"],
-                        student["course_fee"],
-                        student["fee_paid"],
-                        student["balance_fee"]
-
-                    )
-                )
-
-    def show_details(self, event):
-
-        selected = self.tree.focus()
-
-        if not selected:
+        val = self.search.get().strip()
+        self.result.delete("1.0", "end")
+        if not val:
+            messagebox.showerror("Error", "Please provide a Student ID or Mobile Number.")
             return
 
-        values = self.tree.item(selected)["values"]
-
-        student = database.search_student(
-            student_id=int(values[0])
-        )
-
-        messagebox.showinfo(
-            "Student Details",
-            f"""
-Student ID : {student['student_id']}
-
-Name : {student['full_name']}
-
-Gender : {student['gender']}
-
-DOB : {student['dob']}
-
-Mobile : {student['mobile']}
-
-Email : {student['email']}
-
-Address : {student['address']}
-
-Course : {student['course']}
-
-Batch : {student['batch']}
-
-Course Fee : ₹{student['course_fee']}
-
-Paid : ₹{student['fee_paid']}
-
-Balance : ₹{student['balance_fee']}
-"""
-        )
-
-class UpdateStudent(ctk.CTkToplevel):
-
-    def __init__(self, parent):
-
-        super().__init__(parent)
-
-        self.title("Update Student")
-        self.geometry("700x760")
-        self.grab_set()
-
-        ctk.CTkLabel(
-            self,
-            text="Update Student",
-            font=("Arial",24,"bold")
-        ).pack(pady=15)
-
-        self.search_id = ctk.CTkEntry(
-            self,
-            width=300,
-            placeholder_text="Enter Student ID"
-        )
-        self.search_id.pack(pady=8)
-
-        ctk.CTkButton(
-            self,
-            text="Load Student",
-            command=self.load_student
-        ).pack(pady=8)
-
-        self.name = ctk.CTkEntry(self,width=500,placeholder_text="Full Name")
-        self.name.pack(pady=6)
-
-        self.gender = ctk.CTkComboBox(
-            self,
-            values=["Male","Female","Other"]
-        )
-        self.gender.pack(pady=6)
-
-        self.dob = ctk.CTkEntry(self,width=500,placeholder_text="Date of Birth")
-        self.dob.pack(pady=6)
-
-        self.mobile = ctk.CTkEntry(self,width=500,placeholder_text="Mobile")
-        self.mobile.pack(pady=6)
-
-        self.email = ctk.CTkEntry(self,width=500,placeholder_text="Email")
-        self.email.pack(pady=6)
-
-        self.address = ctk.CTkEntry(self,width=500,placeholder_text="Address")
-        self.address.pack(pady=6)
-
-        self.course = ctk.CTkEntry(self,width=500,placeholder_text="Course")
-        self.course.pack(pady=6)
-
-        self.batch = ctk.CTkEntry(self,width=500,placeholder_text="Batch")
-        self.batch.pack(pady=6)
-
-        self.fee = ctk.CTkEntry(self,width=500,placeholder_text="Course Fee")
-        self.fee.pack(pady=6)
-
-        self.paid = ctk.CTkEntry(self,width=500,placeholder_text="Fee Paid")
-        self.paid.pack(pady=6)
-
-        ctk.CTkButton(
-            self,
-            text="Update Student",
-            width=220,
-            command=self.update_student
-        ).pack(pady=20)
-
-    def load_student(self):
-
-        sid = self.search_id.get().strip()
-
-        if not sid.isdigit():
-
-            messagebox.showerror(
-                "Error",
-                "Enter a valid Student ID."
-            )
-            return
-
-        student = database.search_student(
-            student_id=int(sid)
+        student = database.search_student(mobile=val) if len(val) == 10 and val.isdigit() else (
+            database.search_student(student_id=int(val)) if val.isdigit() else None
         )
 
         if not student:
-
-            messagebox.showerror(
-                "Error",
-                "Student not found."
-            )
+            self.result.insert("end", "\n   No record matching criteria.")
             return
 
-        self.name.delete(0,"end")
-        self.name.insert(0,student["full_name"])
+        report = f"""
+========================================================================================
+                                 STUDENT RECORD PROFILE
+========================================================================================
+ Student ID      : {student['student_id']}
+ Full Name       : {student['full_name']}
+ Gender          : {student['gender']}
+ Date of Birth   : {student['dob']}
+ Mobile Number   : {student['mobile']}
+ Email Address   : {student['email']}
+ Address         : {student['address']}
+ Enrolled Course : {student['course']}
+ Batch Timing    : {student['batch']}
+ Admission Date  : {student['admission_date']}
+ ---------------------------------------------------------------------------------------
+ Course Fee      : ₹{student['course_fee']:.2f}
+ Total Paid      : ₹{student['fee_paid']:.2f}
+ Balance Due     : ₹{student['balance_fee']:.2f}
+========================================================================================
+"""
+        self.result.insert("end", report)
 
-        self.gender.set(student["gender"])
 
-        self.dob.delete(0,"end")
-        self.dob.insert(0,student["dob"])
-
-        self.mobile.delete(0,"end")
-        self.mobile.insert(0,student["mobile"])
-
-        self.email.delete(0,"end")
-        self.email.insert(0,student["email"])
-
-        self.address.delete(0,"end")
-        self.address.insert(0,student["address"])
-
-        self.course.delete(0,"end")
-        self.course.insert(0,student["course"])
-
-        self.batch.delete(0,"end")
-        self.batch.insert(0,student["batch"])
-
-        self.fee.delete(0,"end")
-        self.fee.insert(0,str(student["course_fee"]))
-
-        self.paid.delete(0,"end")
-        self.paid.insert(0,str(student["fee_paid"]))
-
-    def update_student(self):
-
-        try:
-
-            sid = self.search_id.get().strip()
-
-            if sid == "":
-                messagebox.showerror(
-                    "Error",
-                    "Enter Student ID."
-                )
-                return
-
-            if not sid.isdigit():
-                messagebox.showerror(
-                    "Error",
-                    "Student ID must be numeric."
-                )
-                return
-
-            name = self.name.get().strip()
-            mobile = self.mobile.get().strip()
-
-            if name == "":
-                messagebox.showerror(
-                    "Error",
-                    "Student name is required."
-                )
-                return
-
-            if not mobile.isdigit() or len(mobile) != 10:
-                messagebox.showerror(
-                    "Error",
-                    "Enter a valid 10-digit mobile number."
-                )
-                return
-
-            fee = float(self.fee.get() or 0)
-            paid = float(self.paid.get() or 0)
-
-            if paid > fee:
-                messagebox.showerror(
-                    "Error",
-                    "Paid fee cannot exceed Course Fee."
-                )
-                return
-
-            balance = fee - paid
-
-            data = (
-
-                name,
-                self.gender.get(),
-                self.dob.get().strip(),
-                mobile,
-                self.email.get().strip(),
-                self.address.get().strip(),
-                self.course.get().strip(),
-                self.batch.get().strip(),
-                fee,
-                paid,
-                balance,
-                int(sid)
-
-            )
-
-            database.update_student(data)
-
-            messagebox.showinfo(
-                "Success",
-                "Student Updated Successfully."
-            )
-
-            if isinstance(self.master, Dashboard):
-                self.master.show_welcome()
-
-            self.destroy()
-
-        except Exception as e:
-
-            messagebox.showerror(
-                "Error",
-                str(e)
-            )
-
-class CourseManagement(ctk.CTkToplevel):
-
+class UpdateStudent(ctk.CTkToplevel):
     def __init__(self, parent):
-
         super().__init__(parent)
-
-        self.title("Course Management")
-        self.geometry("750x550")
+        self.title("Update Student Details")
+        self.after(10, lambda: self.state("zoomed"))
         self.grab_set()
 
-        ctk.CTkLabel(
-            self,
-            text="Course Management",
-            font=("Arial",24,"bold")
-        ).pack(pady=15)
+        scroll = ctk.CTkScrollableFrame(self)
+        scroll.pack(fill="both", expand=True, padx=40, pady=20)
 
-        self.course = ctk.CTkEntry(
-            self,
-            width=400,
-            placeholder_text="Course Name"
-        )
-        self.course.pack(pady=8)
+        ctk.CTkLabel(scroll, text="Update Student Record", font=("Segoe UI", 24, "bold")).pack(pady=15)
 
-        self.duration = ctk.CTkEntry(
-            self,
-            width=400,
-            placeholder_text="Duration (e.g. 6 Months)"
-        )
-        self.duration.pack(pady=8)
+        top = ctk.CTkFrame(scroll)
+        top.pack(pady=10)
+        self.search_id = ctk.CTkEntry(top, width=350, height=40, placeholder_text="Enter Student ID to Load")
+        self.search_id.pack(side="left", padx=10)
+        ctk.CTkButton(top, text="Fetch Record", width=140, height=40, command=self.load_student).pack(side="left", padx=5)
 
-        self.fees = ctk.CTkEntry(
-            self,
-            width=400,
-            placeholder_text="Course Fees"
-        )
-        self.fees.pack(pady=8)
+        self.name = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="Full Name")
+        self.name.pack(pady=6)
+        self.gender = ctk.CTkComboBox(scroll, width=600, height=40, values=["Male", "Female", "Other"])
+        self.gender.pack(pady=6)
+        self.dob = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="Date of Birth")
+        self.dob.pack(pady=6)
+        self.mobile = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="Mobile Number")
+        self.mobile.pack(pady=6)
+        self.email = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="Email Address")
+        self.email.pack(pady=6)
+        self.address = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="Address")
+        self.address.pack(pady=6)
+        self.course = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="Course")
+        self.course.pack(pady=6)
+        self.batch = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="Batch")
+        self.batch.pack(pady=6)
+        self.fee = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="Course Fee")
+        self.fee.pack(pady=6)
+        self.paid = ctk.CTkEntry(scroll, width=600, height=40, placeholder_text="Fee Paid")
+        self.paid.pack(pady=6)
 
-        btn = ctk.CTkFrame(self)
-        btn.pack(pady=10)
+        ctk.CTkButton(scroll, text="Commit Updates", width=260, height=42, command=self.update_student).pack(pady=20)
+
+    def load_student(self):
+        sid = self.search_id.get().strip()
+        if not sid.isdigit():
+            messagebox.showerror("Error", "Enter a valid numeric Student ID.")
+            return
+        student = database.search_student(student_id=int(sid))
+        if not student:
+            messagebox.showerror("Error", "Student record not found.")
+            return
+
+        fields = [
+            (self.name, student["full_name"]), (self.dob, student["dob"]),
+            (self.mobile, student["mobile"]), (self.email, student["email"]),
+            (self.address, student["address"]), (self.course, student["course"]),
+            (self.batch, student["batch"]), (self.fee, str(student["course_fee"])),
+            (self.paid, str(student["fee_paid"]))
+        ]
+        for entry, val in fields:
+            entry.delete(0, "end")
+            entry.insert(0, val)
+        self.gender.set(student["gender"])
+
+    def update_student(self):
+        try:
+            sid = self.search_id.get().strip()
+            name = self.name.get().strip()
+            mobile = self.mobile.get().strip()
+            if not sid.isdigit() or not name or len(mobile) != 10:
+                messagebox.showerror("Validation Error", "Ensure valid ID, non-empty Name, and 10-digit mobile.")
+                return
+            fee = float(self.fee.get() or 0)
+            paid = float(self.paid.get() or 0)
+            if paid > fee:
+                messagebox.showerror("Error", "Paid fee cannot exceed Course Fee.")
+                return
+
+            data = (
+                name, self.gender.get(), self.dob.get().strip(), mobile,
+                self.email.get().strip(), self.address.get().strip(),
+                self.course.get().strip(), self.batch.get().strip(),
+                fee, paid, fee - paid, int(sid)
+            )
+            database.update_student(data)
+            messagebox.showinfo("Success", "Student updated successfully.")
+            if isinstance(self.master, Dashboard):
+                self.master.show_welcome()
+            self.destroy()
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+
+class DeleteStudent(ctk.CTkToplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Delete Student")
+        self.after(10, lambda: self.state("zoomed"))
+        self.grab_set()
+
+        ctk.CTkLabel(self, text="Remove Student Record", font=("Segoe UI", 24, "bold")).pack(pady=20)
+        top = ctk.CTkFrame(self)
+        top.pack(pady=10)
+
+        self.student_id = ctk.CTkEntry(top, width=320, height=40, placeholder_text="Enter Student ID")
+        self.student_id.pack(side="left", padx=10)
+        ctk.CTkButton(top, text="Verify Record", width=140, height=40, command=self.search_student).pack(side="left", padx=5)
+
+        self.info = ctk.CTkTextbox(self, width=700, height=220, font=("Consolas", 14))
+        self.info.pack(pady=20)
 
         ctk.CTkButton(
-            btn,
-            text="Add Course",
-            command=self.add_course
-        ).grid(row=0,column=0,padx=5)
-
-        ctk.CTkButton(
-            btn,
-            text="Update Selected",
-            command=self.update_course
-        ).grid(row=0,column=1,padx=5)
-
-        ctk.CTkButton(
-            btn,
-            text="Refresh",
-            command=self.load_courses
-        ).grid(row=0,column=2,padx=5)
-
-        columns=("ID","Course","Duration","Fees")
-
-        self.tree=ttk.Treeview(
             self,
-            columns=columns,
-            show="headings",
-            height=12
-        )
+            text="Permanently Delete Student",
+            width=260,
+            height=42,
+            fg_color="#A8282B",
+            hover_color="#7A1D1F",
+            command=self.delete_student
+        ).pack(pady=10)
 
-        for col,width in zip(columns,[70,220,180,120]):
-            self.tree.heading(col,text=col)
-            self.tree.column(col,width=width,anchor="center")
+    def search_student(self):
+        self.info.delete("1.0", "end")
+        sid = self.student_id.get().strip()
+        if not sid.isdigit():
+            messagebox.showerror("Error", "Enter a valid numeric Student ID.")
+            return
+        student = database.search_student(student_id=int(sid))
+        if not student:
+            messagebox.showerror("Error", "Student not found.")
+            return
+        self.info.insert("end", f"ID: {student['student_id']}\nName: {student['full_name']}\nCourse: {student['course']}\nBatch: {student['batch']}\nMobile: {student['mobile']}")
 
-        self.tree.pack(fill="both",expand=True,padx=10,pady=10)
+    def delete_student(self):
+        sid = self.student_id.get().strip()
+        if not sid.isdigit():
+            return
+        student = database.search_student(student_id=int(sid))
+        if not student:
+            return
+        if messagebox.askyesno("Confirm Deletion", f"Permanently delete student '{student['full_name']}'?"):
+            database.delete_student(int(sid))
+            messagebox.showinfo("Success", "Record deleted successfully.")
+            if isinstance(self.master, Dashboard):
+                self.master.show_welcome()
+            self.destroy()
 
-        self.tree.bind(
-            "<<TreeviewSelect>>",
-            self.fill_entries
-        )
 
+class CourseManagement(ctk.CTkToplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Course Management")
+        self.after(10, lambda: self.state("zoomed"))
+        self.grab_set()
+
+        ctk.CTkLabel(self, text="Course Configuration", font=("Segoe UI", 24, "bold")).pack(pady=15)
+
+        form = ctk.CTkFrame(self)
+        form.pack(pady=10, padx=20, fill="x")
+
+        self.course = ctk.CTkEntry(form, width=280, height=40, placeholder_text="Course Name")
+        self.course.grid(row=0, column=0, padx=10, pady=10)
+        self.duration = ctk.CTkEntry(form, width=280, height=40, placeholder_text="Duration (e.g. 6 Months)")
+        self.duration.grid(row=0, column=1, padx=10, pady=10)
+        self.fees = ctk.CTkEntry(form, width=280, height=40, placeholder_text="Course Fees")
+        self.fees.grid(row=0, column=2, padx=10, pady=10)
+
+        btn_box = ctk.CTkFrame(self)
+        btn_box.pack(pady=10)
+        ctk.CTkButton(btn_box, text="Add Course", width=140, height=38, command=self.add_course).grid(row=0, column=0, padx=8)
+        ctk.CTkButton(btn_box, text="Update Course", width=140, height=38, command=self.update_course).grid(row=0, column=1, padx=8)
+        ctk.CTkButton(btn_box, text="Refresh", width=140, height=38, fg_color="gray40", command=self.load_courses).grid(row=0, column=2, padx=8)
+
+        table_frame = ctk.CTkFrame(self)
+        table_frame.pack(fill="both", expand=True, padx=20, pady=15)
+
+        columns = ("ID", "Course Name", "Duration", "Fees")
+        self.tree = ttk.Treeview(table_frame, columns=columns, show="headings")
+        for col, width in zip(columns, [90, 320, 220, 180]):
+            self.tree.heading(col, text=col)
+            self.tree.column(col, width=width, anchor="center", stretch=True)
+
+        self.tree.pack(fill="both", expand=True)
+        self.tree.bind("<<TreeviewSelect>>", self.fill_entries)
         self.load_courses()
 
     def load_courses(self):
-
         self.tree.delete(*self.tree.get_children())
-
         for row in database.get_courses():
-
-            self.tree.insert(
-                "",
-                "end",
-                values=(
-                    row["course_id"],
-                    row["course_name"],
-                    row["duration"],
-                    row["fees"]
-                )
-            )
+            self.tree.insert("", "end", values=(row["course_id"], row["course_name"], row["duration"], f"₹{row['fees']:.2f}"))
 
     def add_course(self):
-
         try:
-
-            name=self.course.get().strip()
-            duration=self.duration.get().strip()
-            fees=float(self.fees.get())
-
-            if name=="":
-
-                messagebox.showerror(
-                    "Error",
-                    "Enter course name."
-                )
+            name, dur = self.course.get().strip(), self.duration.get().strip()
+            fees = float(self.fees.get())
+            if not name:
+                messagebox.showerror("Error", "Enter course name.")
                 return
-
-            database.add_course(
-                name,
-                duration,
-                fees
-            )
-
-            messagebox.showinfo(
-                "Success",
-                "Course Added Successfully."
-            )
-
+            database.add_course(name, dur, fees)
+            messagebox.showinfo("Success", "Course added successfully.")
             self.clear()
             self.load_courses()
-
             if isinstance(self.master, Dashboard):
                 self.master.show_welcome()
-
         except Exception as e:
+            messagebox.showerror("Error", str(e))
 
-            messagebox.showerror(
-                "Error",
-                str(e)
-            )
-
-    def fill_entries(self,event):
-
-        selected=self.tree.focus()
-
-        if not selected:
+    def fill_entries(self, event):
+        sel = self.tree.focus()
+        if not sel:
             return
-
-        values=self.tree.item(selected)["values"]
-
-        self.course.delete(0,"end")
-        self.course.insert(0,values[1])
-
-        self.duration.delete(0,"end")
-        self.duration.insert(0,values[2])
-
-        self.fees.delete(0,"end")
-        self.fees.insert(0,values[3])
+        vals = self.tree.item(sel)["values"]
+        for entry, val in [(self.course, vals[1]), (self.duration, vals[2]), (self.fees, str(vals[3]).replace("₹", ""))]:
+            entry.delete(0, "end")
+            entry.insert(0, val)
 
     def update_course(self):
-
-        selected=self.tree.focus()
-
-        if not selected:
-
-            messagebox.showerror(
-                "Error",
-                "Select a course."
-            )
+        sel = self.tree.focus()
+        if not sel:
+            messagebox.showerror("Error", "Select a course.")
             return
-
-        values=self.tree.item(selected)["values"]
-
+        cid = self.tree.item(sel)["values"][0]
         try:
-
-            database.update_course(
-
-                values[0],
-                self.course.get().strip(),
-                self.duration.get().strip(),
-                float(self.fees.get())
-
-            )
-
-            messagebox.showinfo(
-                "Success",
-                "Course Updated Successfully."
-            )
-
+            database.update_course(cid, self.course.get().strip(), self.duration.get().strip(), float(self.fees.get()))
+            messagebox.showinfo("Success", "Course updated.")
             self.load_courses()
             self.clear()
-
         except Exception as e:
-
-            messagebox.showerror(
-                "Error",
-                str(e)
-            )
+            messagebox.showerror("Error", str(e))
 
     def clear(self):
+        for e in [self.course, self.duration, self.fees]:
+            e.delete(0, "end")
 
-        self.course.delete(0,"end")
-        self.duration.delete(0,"end")
-        self.fees.delete(0,"end")
 
-
-class FeeManagement(ctk.CTkToplevel):
-
-    def __init__(self, parent):
-
-        super().__init__(parent)
-
-        self.title("Fee Management")
-        self.geometry("750x650")
-        self.grab_set()
-
-        ctk.CTkLabel(
-            self,
-            text="Fee Management",
-            font=("Arial",24,"bold")
-        ).pack(pady=15)
-
-        self.student_id = ctk.CTkEntry(
-            self,
-            width=300,
-            placeholder_text="Student ID"
-        )
-        self.student_id.pack(pady=8)
-
-        ctk.CTkButton(
-            self,
-            text="Search",
-            command=self.search_student
-        ).pack(pady=5)
-
-        self.info = ctk.CTkTextbox(
-            self,
-            width=650,
-            height=180
-        )
-        self.info.pack(pady=10)
-
-        self.amount = ctk.CTkEntry(
-            self,
-            width=300,
-            placeholder_text="Payment Amount"
-        )
-        self.amount.pack(pady=8)
-
-        ctk.CTkButton(
-            self,
-            text="Collect Fee",
-            command=self.collect_fee
-        ).pack(pady=10)
-
-        ctk.CTkLabel(
-            self,
-            text="Payment History",
-            font=("Arial",18,"bold")
-        ).pack(pady=(15,5))
-
-        self.history = ctk.CTkTextbox(
-            self,
-            width=650,
-            height=220
-        )
-        self.history.pack(pady=5)
-
-    def search_student(self):
-
-        sid = self.student_id.get().strip()
-
-        self.info.delete("1.0","end")
-        self.history.delete("1.0","end")
-
-        if not sid.isdigit():
-
-            messagebox.showerror(
-                "Error",
-                "Enter a valid Student ID."
-            )
-            return
-
-        student = database.search_student(
-            student_id=int(sid)
-        )
-
-        if not student:
-
-            messagebox.showerror(
-                "Error",
-                "Student not found."
-            )
-            return
-
-        details = f"""
-Student ID : {student['student_id']}
-Name       : {student['full_name']}
-Course     : {student['course']}
-
-Course Fee : ₹{student['course_fee']}
-Fee Paid   : ₹{student['fee_paid']}
-Balance    : ₹{student['balance_fee']}
-"""
-
-        self.info.insert("end", details)
-
-        payments = database.payment_history(int(sid))
-
-        if payments:
-
-            for pay in payments:
-
-                self.history.insert(
-                    "end",
-                    f"{pay['payment_date']}    ₹{pay['amount']}\n"
-                )
-
-        else:
-
-            self.history.insert(
-                "end",
-                "No payment history found."
-            )
-
-    def collect_fee(self):
-
-        sid = self.student_id.get().strip()
-
-        if not sid.isdigit():
-
-            messagebox.showerror(
-                "Error",
-                "Enter Student ID."
-            )
-            return
-
-        try:
-
-            amount = float(self.amount.get())
-
-            if amount <= 0:
-
-                messagebox.showerror(
-                    "Error",
-                    "Enter a valid amount."
-                )
-                return
-
-            success = database.pay_fee(
-                int(sid),
-                amount
-            )
-
-            if success:
-
-                messagebox.showinfo(
-                    "Success",
-                    "Fee Collected Successfully."
-                )
-
-                self.amount.delete(0,"end")
-
-                self.search_student()
-
-                if isinstance(self.master, Dashboard):
-                    self.master.show_welcome()
-
-            else:
-    
-                messagebox.showerror(
-                    "Error",
-                    "Payment failed."
-                )
-
-        except ValueError:
-
-            messagebox.showerror(
-                "Error",
-                "Amount must be numeric."
-            )
-
-        except Exception as e:
-
-            messagebox.showerror(
-                "Error",
-                str(e)
-            )
-class AttendanceWindow(ctk.CTkToplevel):
-
-    def __init__(self, parent):
-
-        super().__init__(parent)
-
-        self.title("Attendance")
-        self.geometry("700x600")
-        self.grab_set()
-
-        ctk.CTkLabel(
-            self,
-            text="Attendance Management",
-            font=("Arial",24,"bold")
-        ).pack(pady=15)
-
-        self.student_id = ctk.CTkEntry(
-            self,
-            width=300,
-            placeholder_text="Student ID"
-        )
-        self.student_id.pack(pady=8)
-
-        self.status = ctk.CTkComboBox(
-            self,
-            values=["Present","Absent"]
-        )
-        self.status.set("Present")
-        self.status.pack(pady=8)
-
-        ctk.CTkButton(
-            self,
-            text="Mark Attendance",
-            command=self.mark_attendance
-        ).pack(pady=10)
-
-        ctk.CTkLabel(
-            self,
-            text="Attendance Records",
-            font=("Arial",18,"bold")
-        ).pack(pady=(15,5))
-
-        self.records = ctk.CTkTextbox(
-            self,
-            width=620,
-            height=320
-        )
-
-        self.records.pack(pady=10)
-
-        ctk.CTkButton(
-            self,
-            text="Load Attendance",
-            command=self.load_attendance
-        ).pack()
-
-    def mark_attendance(self):
-
-        sid = self.student_id.get().strip()
-
-        if not sid.isdigit():
-
-            messagebox.showerror(
-                "Error",
-                "Enter Student ID."
-            )
-            return
-
-        success = database.mark_attendance(
-            int(sid),
-            self.status.get()
-        )
-
-        if success:
-
-            messagebox.showinfo(
-                "Success",
-                "Attendance Marked."
-            )
-
-            self.load_attendance()
-
-        else:
-
-            messagebox.showerror(
-                "Error",
-                "Attendance already marked or student not found."
-            )
-
-    def load_attendance(self):
-
-        self.records.delete("1.0","end")
-
-        sid = self.student_id.get().strip()
-
-        if not sid.isdigit():
-            return
-
-        rows = database.get_attendance(
-            int(sid)
-        )
-
-        if not rows:
-
-            self.records.insert(
-                "end",
-                "No attendance records."
-            )
-            return
-
-        percent = database.attendance_percentage(
-            int(sid)
-        )
-
-        self.records.insert(
-            "end",
-            f"Attendance Percentage : {percent}%\n\n"
-        )
-
-        for row in rows:
-
-            self.records.insert(
-                "end",
-                f"{row['date']}      {row['status']}\n"
-            )
-
-
-class ReportsWindow(ctk.CTkToplevel):
-
-    def __init__(self,parent):
-
-        super().__init__(parent)
-
-        self.title("Reports")
-        self.geometry("900x650")
-        self.grab_set()
-
-        ctk.CTkLabel(
-            self,
-            text="Reports",
-            font=("Arial",24,"bold")
-        ).pack(pady=15)
-
-        top = ctk.CTkFrame(self)
-        top.pack(fill="x",padx=10,pady=10)
-
-        ctk.CTkButton(
-            top,
-            text="Student Report",
-            command=self.student_report
-        ).pack(side="left",padx=5)
-
-        ctk.CTkButton(
-            top,
-            text="Fee Report",
-            command=self.fee_report
-        ).pack(side="left",padx=5)
-
-        ctk.CTkButton(
-            top,
-            text="Attendance Report",
-            command=self.attendance_report
-        ).pack(side="left",padx=5)
-
-        self.report = ctk.CTkTextbox(
-            self,
-            width=850,
-            height=520,
-            font=("Consolas",13)
-        )
-
-        self.report.pack(padx=10,pady=10)
-
-    def student_report(self):
-
-        self.report.delete("1.0","end")
-
-        rows = database.student_report()
-
-        self.report.insert(
-            "end",
-            "ID\tNAME\tCOURSE\tBATCH\tMOBILE\n"
-        )
-
-        self.report.insert(
-            "end",
-            "-"*80+"\n"
-        )
-
-        for row in rows:
-
-            self.report.insert(
-                "end",
-                f"{row['student_id']}\t"
-                f"{row['full_name']}\t"
-                f"{row['course']}\t"
-                f"{row['batch']}\t"
-                f"{row['mobile']}\n"
-            )
-
-    def fee_report(self):
-
-        self.report.delete("1.0","end")
-
-        rows = database.fee_report()
-
-        self.report.insert(
-            "end",
-            "ID\tNAME\tTOTAL\tPAID\tBALANCE\n"
-        )
-
-        self.report.insert(
-            "end",
-            "-"*80+"\n"
-        )
-
-        for row in rows:
-
-            self.report.insert(
-                "end",
-                f"{row['student_id']}\t"
-                f"{row['full_name']}\t"
-                f"{row['course_fee']}\t"
-                f"{row['fee_paid']}\t"
-                f"{row['balance_fee']}\n"
-            )
-
-    def attendance_report(self):
-
-        self.report.delete("1.0","end")
-
-        rows = database.attendance_report()
-
-        self.report.insert(
-            "end",
-            "ID\tNAME\tDATE\tSTATUS\n"
-        )
-
-        self.report.insert(
-            "end",
-            "-"*80+"\n"
-        )
-
-        for row in rows:
-
-            self.report.insert(
-                "end",
-                f"{row['student_id']}\t"
-                f"{row['full_name']}\t"
-                f"{row['date']}\t"
-                f"{row['status']}\n"
-            )
-
-    def logout(self):
-
-        if messagebox.askyesno(
-            "Logout",
-            "Do you want to logout?"
-        ):
-
-            database.add_log("Administrator Logged Out")
-
-            self.destroy()
-
-            LoginWindow().mainloop()
 class BatchManagement(ctk.CTkToplevel):
-
     def __init__(self, parent):
-
         super().__init__(parent)
-
         self.title("Batch Management")
-        self.geometry("750x550")
+        self.after(10, lambda: self.state("zoomed"))
         self.grab_set()
 
-        ctk.CTkLabel(
-            self,
-            text="Batch Management",
-            font=("Arial",24,"bold")
-        ).pack(pady=15)
+        ctk.CTkLabel(self, text="Batch Scheduling", font=("Segoe UI", 24, "bold")).pack(pady=15)
 
-        self.batch = ctk.CTkEntry(
-            self,
-            width=400,
-            placeholder_text="Batch Name"
-        )
-        self.batch.pack(pady=8)
+        form = ctk.CTkFrame(self)
+        form.pack(pady=10, padx=20, fill="x")
 
-        self.timing = ctk.CTkEntry(
-            self,
-            width=400,
-            placeholder_text="Timing (e.g. 10 AM - 12 PM)"
-        )
-        self.timing.pack(pady=8)
+        self.batch = ctk.CTkEntry(form, width=280, height=40, placeholder_text="Batch Name")
+        self.batch.grid(row=0, column=0, padx=10, pady=10)
+        self.timing = ctk.CTkEntry(form, width=280, height=40, placeholder_text="Timing (e.g. 10 AM - 12 PM)")
+        self.timing.grid(row=0, column=1, padx=10, pady=10)
+        self.course = ctk.CTkEntry(form, width=280, height=40, placeholder_text="Course Name")
+        self.course.grid(row=0, column=2, padx=10, pady=10)
 
-        self.course = ctk.CTkEntry(
-            self,
-            width=400,
-            placeholder_text="Course Name"
-        )
-        self.course.pack(pady=8)
+        btn_box = ctk.CTkFrame(self)
+        btn_box.pack(pady=10)
+        ctk.CTkButton(btn_box, text="Add Batch", width=140, height=38, command=self.add_batch).grid(row=0, column=0, padx=8)
+        ctk.CTkButton(btn_box, text="Refresh", width=140, height=38, fg_color="gray40", command=self.load_batches).grid(row=0, column=1, padx=8)
 
-        btn = ctk.CTkFrame(self)
-        btn.pack(pady=10)
+        table_frame = ctk.CTkFrame(self)
+        table_frame.pack(fill="both", expand=True, padx=20, pady=15)
 
-        ctk.CTkButton(
-            btn,
-            text="Add Batch",
-            command=self.add_batch
-        ).grid(row=0,column=0,padx=5)
+        columns = ("ID", "Batch Name", "Timing", "Associated Course")
+        self.tree = ttk.Treeview(table_frame, columns=columns, show="headings")
+        for col, width in zip(columns, [90, 260, 260, 280]):
+            self.tree.heading(col, text=col)
+            self.tree.column(col, width=width, anchor="center", stretch=True)
 
-        ctk.CTkButton(
-            btn,
-            text="Refresh",
-            command=self.load_batches
-        ).grid(row=0,column=1,padx=5)
-
-        columns = ("ID","Batch","Timing","Course")
-
-        self.tree = ttk.Treeview(
-            self,
-            columns=columns,
-            show="headings",
-            height=12
-        )
-
-        widths = [70,180,220,200]
-
-        for col,width in zip(columns,widths):
-
-            self.tree.heading(col,text=col)
-            self.tree.column(col,width=width,anchor="center")
-
-        self.tree.pack(
-            fill="both",
-            expand=True,
-            padx=10,
-            pady=10
-        )
-
-        self.tree.bind(
-            "<<TreeviewSelect>>",
-            self.fill_entries
-        )
-
+        self.tree.pack(fill="both", expand=True)
         self.load_batches()
 
     def load_batches(self):
-
         self.tree.delete(*self.tree.get_children())
-
-        rows = database.get_batches()
-
-        for row in rows:
-
-            self.tree.insert(
-                "",
-                "end",
-                values=(
-                    row["batch_id"],
-                    row["batch_name"],
-                    row["timing"],
-                    row["course_name"]
-                )
-            )
+        for row in database.get_batches():
+            self.tree.insert("", "end", values=(row["batch_id"], row["batch_name"], row["timing"], row["course_name"]))
 
     def add_batch(self):
+        b, t, c = self.batch.get().strip(), self.timing.get().strip(), self.course.get().strip()
+        if not b or not c:
+            messagebox.showerror("Error", "Batch and Course Name are required.")
+            return
+        database.add_batch(b, t, c)
+        messagebox.showinfo("Success", "Batch added.")
+        for entry in [self.batch, self.timing, self.course]:
+            entry.delete(0, "end")
+        self.load_batches()
+        if isinstance(self.master, Dashboard):
+            self.master.show_welcome()
 
-        batch = self.batch.get().strip()
-        timing = self.timing.get().strip()
-        course = self.course.get().strip()
 
-        if batch == "" or course == "":
+class FeeManagement(ctk.CTkToplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Fee Management & Financial Ledger")
+        self.after(10, lambda: self.state("zoomed"))
+        self.grab_set()
 
-            messagebox.showerror(
-                "Error",
-                "Batch Name and Course Name are required."
-            )
+        ctk.CTkLabel(self, text="Fee Management & Installment Ledger", font=("Segoe UI", 24, "bold")).pack(pady=15)
+
+        top = ctk.CTkFrame(self)
+        top.pack(pady=10)
+
+        self.student_id = ctk.CTkEntry(top, width=320, height=40, placeholder_text="Enter Student ID")
+        self.student_id.pack(side="left", padx=10)
+        ctk.CTkButton(top, text="Fetch Ledger", width=140, height=40, command=self.search_student).pack(side="left", padx=5)
+
+        self.info = ctk.CTkTextbox(self, width=800, height=130, font=("Consolas", 13))
+        self.info.pack(pady=10)
+
+        pay_box = ctk.CTkFrame(self)
+        pay_box.pack(pady=10)
+        self.amount = ctk.CTkEntry(pay_box, width=300, height=40, placeholder_text="Payment Installment Amount (₹)")
+        self.amount.pack(side="left", padx=10)
+        ctk.CTkButton(pay_box, text="Collect Fee", width=140, height=40, command=self.collect_fee).pack(side="left", padx=5)
+
+        ctk.CTkLabel(self, text="Historical Payment Ledger", font=("Segoe UI", 16, "bold")).pack(pady=(15, 5))
+        self.history = ctk.CTkTextbox(self, width=800, height=220, font=("Consolas", 13))
+        self.history.pack(fill="both", expand=True, padx=40, pady=10)
+
+    def search_student(self):
+        sid = self.student_id.get().strip()
+        self.info.delete("1.0", "end")
+        self.history.delete("1.0", "end")
+        if not sid.isdigit():
+            messagebox.showerror("Error", "Enter a valid numeric Student ID.")
+            return
+        student = database.search_student(student_id=int(sid))
+        if not student:
+            messagebox.showerror("Error", "Student record not found.")
             return
 
+        self.info.insert("end", f"Student ID: {student['student_id']} | Name: {student['full_name']} | Course: {student['course']}\nTotal Fee: ₹{student['course_fee']:.2f} | Fee Paid: ₹{student['fee_paid']:.2f} | Balance Remaining: ₹{student['balance_fee']:.2f}")
+
+        payments = database.payment_history(int(sid))
+        if payments:
+            self.history.insert("end", f"{'PAYMENT DATE & TIME':<30} {'AMOUNT PAID':<20}\n" + "-"*50 + "\n")
+            for pay in payments:
+                self.history.insert("end", f"{pay['payment_date']:<30} ₹{pay['amount']:,.2f}\n")
+        else:
+            self.history.insert("end", "No previous payments on file.")
+
+    def collect_fee(self):
+        sid = self.student_id.get().strip()
+        if not sid.isdigit():
+            return
         try:
+            amt = float(self.amount.get())
+            if amt <= 0:
+                messagebox.showerror("Error", "Enter an amount greater than zero.")
+                return
+            if database.pay_fee(int(sid), amt):
+                messagebox.showinfo("Success", "Fee collected successfully.")
+                self.amount.delete(0, "end")
+                self.search_student()
+                if isinstance(self.master, Dashboard):
+                    self.master.show_welcome()
+            else:
+                messagebox.showerror("Error", "Payment exceeds total balance or student does not exist.")
+        except ValueError:
+            messagebox.showerror("Error", "Invalid numeric amount.")
 
-            database.add_batch(
-                batch,
-                timing,
-                course
-            )
 
-            messagebox.showinfo(
-                "Success",
-                "Batch Added Successfully."
-            )
+class AttendanceWindow(ctk.CTkToplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Attendance Management")
+        self.after(10, lambda: self.state("zoomed"))
+        self.grab_set()
 
-            self.clear()
-            self.load_batches()
+        ctk.CTkLabel(self, text="Daily Attendance System", font=("Segoe UI", 24, "bold")).pack(pady=15)
 
-            if isinstance(self.master, Dashboard):
-                self.master.show_welcome()
+        form = ctk.CTkFrame(self)
+        form.pack(pady=10)
 
-        except Exception as e:
+        self.student_id = ctk.CTkEntry(form, width=280, height=40, placeholder_text="Student ID")
+        self.student_id.grid(row=0, column=0, padx=10)
+        self.status = ctk.CTkComboBox(form, width=160, height=40, values=["Present", "Absent"])
+        self.status.set("Present")
+        self.status.grid(row=0, column=1, padx=10)
 
-            messagebox.showerror(
-                "Error",
-                str(e)
-            )
+        ctk.CTkButton(form, text="Mark Attendance", width=160, height=40, command=self.mark_attendance).grid(row=0, column=2, padx=10)
+        ctk.CTkButton(form, text="Load Records", width=140, height=40, fg_color="gray40", command=self.load_attendance).grid(row=0, column=3, padx=10)
 
-    def fill_entries(self, event):
+        self.records = ctk.CTkTextbox(self, width=800, height=450, font=("Consolas", 14))
+        self.records.pack(fill="both", expand=True, padx=40, pady=20)
 
-        selected = self.tree.focus()
-
-        if not selected:
+    def mark_attendance(self):
+        sid = self.student_id.get().strip()
+        if not sid.isdigit():
+            messagebox.showerror("Error", "Please enter a valid numeric Student ID.")
             return
+        if database.mark_attendance(int(sid), self.status.get()):
+            messagebox.showinfo("Success", "Attendance registered.")
+            self.load_attendance()
+        else:
+            messagebox.showerror("Error", "Attendance already recorded for today or student does not exist.")
 
-        values = self.tree.item(selected)["values"]
+    def load_attendance(self):
+        self.records.delete("1.0", "end")
+        sid = self.student_id.get().strip()
+        if not sid.isdigit():
+            return
+        rows = database.get_attendance(int(sid))
+        if not rows:
+            self.records.insert("end", "No attendance records found.")
+            return
+        pct = database.attendance_percentage(int(sid))
+        self.records.insert("end", f"Overall Attendance: {pct}%\n" + "="*40 + "\n\n")
+        for r in rows:
+            self.records.insert("end", f"{r['date']:<20} {r['status']:<15}\n")
 
-        self.batch.delete(0,"end")
-        self.batch.insert(0,values[1])
 
-        self.timing.delete(0,"end")
-        self.timing.insert(0,values[2])
+class ReportsWindow(ctk.CTkToplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Institutional Reports")
+        self.after(10, lambda: self.state("zoomed"))
+        self.grab_set()
 
-        self.course.delete(0,"end")
-        self.course.insert(0,values[3])
+        ctk.CTkLabel(self, text="Analytical System Reports", font=("Segoe UI", 24, "bold")).pack(pady=15)
 
-    def clear(self):
+        top = ctk.CTkFrame(self)
+        top.pack(fill="x", padx=40, pady=10)
 
-        self.batch.delete(0,"end")
-        self.timing.delete(0,"end")
-        self.course.delete(0,"end")
-        
+        ctk.CTkButton(top, text="Student Directory", width=180, height=38, command=self.student_report).pack(side="left", padx=8)
+        ctk.CTkButton(top, text="Financial Report", width=180, height=38, command=self.fee_report).pack(side="left", padx=8)
+        ctk.CTkButton(top, text="Attendance Audit", width=180, height=38, command=self.attendance_report).pack(side="left", padx=8)
+
+        self.report = ctk.CTkTextbox(self, width=900, height=520, font=("Consolas", 13))
+        self.report.pack(fill="both", expand=True, padx=40, pady=20)
+
+    def student_report(self):
+        self.report.delete("1.0", "end")
+        rows = database.student_report()
+        self.report.insert("end", f"{'ID':<6} {'FULL NAME':<25} {'COURSE':<18} {'BATCH':<15} {'MOBILE':<15}\n" + "="*80 + "\n")
+        for r in rows:
+            self.report.insert("end", f"{r['student_id']:<6} {r['full_name']:<25} {r['course']:<18} {r['batch']:<15} {r['mobile']:<15}\n")
+
+    def fee_report(self):
+        self.report.delete("1.0", "end")
+        rows = database.fee_report()
+        self.report.insert("end", f"{'ID':<6} {'NAME':<25} {'COURSE FEE':<15} {'PAID':<15} {'BALANCE':<15}\n" + "="*80 + "\n")
+        for r in rows:
+            self.report.insert("end", f"{r['student_id']:<6} {r['full_name']:<25} ₹{r['course_fee']:<14.2f} ₹{r['fee_paid']:<14.2f} ₹{r['balance_fee']:<14.2f}\n")
+
+    def attendance_report(self):
+        self.report.delete("1.0", "end")
+        rows = database.attendance_report()
+        self.report.insert("end", f"{'ID':<6} {'STUDENT NAME':<25} {'RECORD DATE':<20} {'STATUS':<15}\n" + "="*70 + "\n")
+        for r in rows:
+            self.report.insert("end", f"{r['student_id']:<6} {r['full_name']:<25} {r['date']:<20} {r['status']:<15}\n")
+
 
 if __name__ == "__main__":
-
     app = LoginWindow()
-
     app.mainloop()
